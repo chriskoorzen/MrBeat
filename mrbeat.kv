@@ -1,0 +1,21 @@
+#:import track track
+#:import control control
+
+MainWidget:
+
+<MainWidget>:
+    control_layout: control_layout
+    tracks_layout: tracks_layout
+    BoxLayout:
+        orientation: 'vertical'
+        BoxLayout:
+            id: control_layout
+            size_hint_y: None
+            height: dp(100)
+            ControlButton:
+                text: "PLAY"
+            ControlButton:
+                text: "STOP"
+        BoxLayout:
+            id: tracks_layout
+            orientation: "vertical"

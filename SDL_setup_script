@@ -1,0 +1,34 @@
+#! /bin/sh
+# Tested on Ubuntu 20.04 Focal Fossa
+
+# Get script dependencies
+sudo apt-get update
+sudo apt-get install --assume-yes python3-distutils
+sudo apt-get install --assume-yes python3-pip
+sudo apt-get install --assume-yes git
+sudo python3 -m pip install --upgrade pip
+
+# Get audiostream dependencies
+sudo apt-get install --assume-yes libsdl2-dev
+sudo apt-get install --assume-yes libsdl2-mixer-dev
+sudo pip3 install kivy
+sudo pip3 install Cython
+sudo git clone https://github.com/kivy/audiostream
+
+# 1. Navigate to audiostream directory
+# 2. Open the audiostream install.py file
+# 3. Add the following before the line -- use_sdl2 = environ.get('USE_SDL2') -- (line 33):
+#        environ.setdefault('USE_SDL2', '1')   # Force the use of SDL2
+# 4. Save and exit the file
+cd audiostream
+sudo sed -in "s+use_sdl2 = environ.get('USE_SDL2')+environ.setdefault('USE_SDL2', '1')   # Force the use of SDL2\nuse_sdl2 = environ.get('USE_SDL2')+g" setup.py
+
+# Compile audiostream
+sudo python3 setup.py install
+
+# Clean up 
+cd ..
+sudo rm -r audiostream
+
+# It should work now! Type 'pip list' in terminal - audiostream should be present.
+# Try one of the example files (eg. sinslider/main.py) from Audiostream - you should hear a sound
