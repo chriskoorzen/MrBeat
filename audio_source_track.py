@@ -8,7 +8,7 @@ class AudioSourceTrack(ThreadSource):
 
     def __init__(self, output_stream, wav_samples, bpm, sample_rate, *args, **kwargs):
         ThreadSource.__init__(self, output_stream, *args, **kwargs)
-        self.steps = ()                         # Init as empty tuple
+        self.steps = ()                         # Tuple index for enabled/disabled step to play sound
         self.step_nb_samples = 0
 
         self.bpm = bpm
@@ -26,9 +26,13 @@ class AudioSourceTrack(ThreadSource):
 
     def set_steps(self, steps):
         # If the number of steps change the step index must be reset
+        print("AudioTrack:: "+str(steps))
+        print("AudioTrack:: Enter function")
         if not len(steps) == len(self.steps):
             self.current_step_index = 0
+            print("AudioTrack:: Steps reset")
         self.steps = steps
+        print("AudioTrack:: Steps set")
 
     def set_bpm(self, bpm):
         self.bpm = bpm
@@ -45,13 +49,28 @@ class AudioSourceTrack(ThreadSource):
                 self.step_nb_samples = step_samples     # Set to new value if different
                 self.buffer = array('h', b"\x00\x00" * self.step_nb_samples)
 
-    # Override the get_bytes method of ThreadSource
-    # This is called internally somewhere and makes the magic happen
+    # Override the get_bytes method of ThreadSource  -- see get_bytes_array
+    # This is called internally by audio library and makes the magic happen
     def get_bytes(self, *args, **kwargs):
+        # Add .tobytes() for audio library call
+        return self.get_bytes_array().tobytes()  # Note - some implementations use tostring()
+
+    # This is not necessary when audioMixer zero init is removed
+    def no_steps_activated(self):
+        if len(self.steps) == 0:
+            return True
+        for n in self.steps:
+            if n == 1:
+                return False
+        return True
+
+    # Alias of get_bytes to expose the buffer for AudioSourceMixer
+    def get_bytes_array(self):
 
         for i in range(self.step_nb_samples):
-            if len(self.steps) > 0:  # Check if any steps are present
-                # Check if step at [index] position is enabled, and index is smaller than wav samples allocated
+            if len(self.steps) > 0 and not self.no_steps_activated():  # Check if any steps are present
+                # Check if step at [index] position is enabled
+                # and if index is smaller than wav samples allocated
                 if self.steps[self.current_step_index] == 1 and i < self.nb_wav_samples:
                     self.buffer[i] = self.wav_samples[i]  # then pass the wav sample to buffer
                     if i == 0:                                                          # When new sound starts
@@ -66,8 +85,10 @@ class AudioSourceTrack(ThreadSource):
                 self.buffer[i] = 0  # else place nothing
             self.current_sample_index += 1
 
+        # Increment step index after each loop
         self.current_step_index += 1
+        # Reset step index position once looped through
         if self.current_step_index >= len(self.steps):
             self.current_step_index = 0
 
-        return self.buffer.tobytes()  # Note - some implementations use tostring()
+        return self.buffer

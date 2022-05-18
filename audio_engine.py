@@ -1,6 +1,7 @@
 from audiostream.core import get_output
 
 from audio_source import AudioSourceOneShot
+from audio_source_mixer import AudioSourceMixer
 from audio_source_track import AudioSourceTrack
 
 
@@ -18,19 +19,25 @@ class AudioEngine:
                                         encoding=self.SAMPLE_ENCODING,
                                         buffersize=self.BUFFER_SIZE
                                         )
+        self.audio_mixer = None
         # Init single AudioSource thread
         # Pass channel handler to ThreadSource subclass (AudioSourceOneShot)
-        # self.audio_source = AudioSourceOneShot(self.output_stream)
-        # self.audio_source.start()  # Let 'er rip!
+        self.audio_source_oneshot = AudioSourceOneShot(self.output_stream)
+        # This activates the audio library that calls get_bytes and send data to sound card
+        self.audio_source_oneshot.start()
+        print("Started OneShot in Audio Engine")
 
     def play_sound(self, wav_samples):
-        self.audio_source.set_wav_samples(wav_samples)
+        self.audio_source_oneshot.set_wav_samples(wav_samples)
 
     def create_track(self, wav_samples, bpm):
         source_track = AudioSourceTrack(self.output_stream, wav_samples, bpm, self.SAMPLE_RATE)
-        # test_step = (1, 1, 0, 0)            # Test code
-        # source_track.set_steps(test_step)   # Test code
         source_track.start()    # Starts the engine that consumes bytes out of buffer
+        print("Started SourceTrack in Audio Engine")
         return source_track     # Return handler to AudioSourceTrack to allow call of set_steps
 
-
+    def create_mixer(self, all_wav_samples, bpm, nb_steps):
+        self.audio_mixer = AudioSourceMixer(self.output_stream, all_wav_samples, bpm, self.SAMPLE_RATE, nb_steps)
+        self.audio_mixer.start()
+        print("Started SourceMixer in Audio Engine")
+        return self.audio_mixer
