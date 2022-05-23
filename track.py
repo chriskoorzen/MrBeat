@@ -16,7 +16,7 @@ class TrackSoundButton(Button):
 
 class TrackWidget(BoxLayout):
 
-    def __init__(self, sound, audio_engine, track_nb_steps, track_source, **kwargs):
+    def __init__(self, sound, audio_engine, track_nb_steps, track_source, track_left_align, **kwargs):
         super(TrackWidget, self).__init__(**kwargs)
         self.name = sound.displayname
         self.sound = sound                  # Save reference to Sound class object init'd in sound_kit_service
@@ -25,7 +25,7 @@ class TrackWidget(BoxLayout):
         self.track_nb_steps = track_nb_steps
         self.track_source = track_source    # Save reference to AudioSourceTrack class object
 
-        sound_button = TrackSoundButton(text=self.name)
+        sound_button = TrackSoundButton(text=self.name, width=track_left_align)
         self.add_widget(sound_button)
         sound_button.on_press = self.on_soundbutton_press
         for i in range(track_nb_steps):

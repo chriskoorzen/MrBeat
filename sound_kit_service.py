@@ -50,6 +50,16 @@ class SoundKit_1(SoundKit):
     pass
 
 
+class SoundKit_2(SoundKit):
+    sounds = (Sound('sounds/kit1/kick.wav', 'KICK'),
+              Sound('sounds/kit1/clap.wav', 'CLAP'),
+              Sound('sounds/kit1/snare.wav', 'SNARE'),
+              Sound('sounds/kit1/bass.wav', 'BASS')
+              )
+
+    pass
+
+
 class SoundKitService:
     soundkit = SoundKit_1()
 

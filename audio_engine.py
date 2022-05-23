@@ -36,8 +36,8 @@ class AudioEngine:
         print("Started SourceTrack in Audio Engine")
         return source_track     # Return handler to AudioSourceTrack to allow call of set_steps
 
-    def create_mixer(self, all_wav_samples, bpm, nb_steps):
-        self.audio_mixer = AudioSourceMixer(self.output_stream, all_wav_samples, bpm, self.SAMPLE_RATE, nb_steps)
+    def create_mixer(self, all_wav_samples, bpm, nb_steps, on_current_step_changed, min_bpm):
+        self.audio_mixer = AudioSourceMixer(self.output_stream, all_wav_samples, bpm, self.SAMPLE_RATE, nb_steps, on_current_step_changed, min_bpm)
         self.audio_mixer.start()
         print("Started SourceMixer in Audio Engine")
         return self.audio_mixer

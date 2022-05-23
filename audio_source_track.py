@@ -6,48 +6,46 @@ from audiostream.sources.thread import ThreadSource
 # This does the actual playing of sounds by passing a channel and a wav stream
 class AudioSourceTrack(ThreadSource):
 
-    def __init__(self, output_stream, wav_samples, bpm, sample_rate, *args, **kwargs):
+    def __init__(self, output_stream, wav_samples, bpm, sample_rate, min_bpm, *args, **kwargs):
         ThreadSource.__init__(self, output_stream, *args, **kwargs)
-        self.steps = ()                         # Tuple index for enabled/disabled step to play sound
-        self.step_nb_samples = 0
 
+        self.min_bpm = min_bpm                  # This setting allows to create the maximum size buffer needed
         self.bpm = bpm
         self.sample_rate = sample_rate
 
         self.wav_samples = wav_samples          # Get the wav source samples
         self.nb_wav_samples = len(wav_samples)  # Get the no. of samples in wav source
 
+        # How many samples to play per step - this is dependent on BPM
+        self.step_nb_samples = self.compute_step_nb_samples(bpm)
+        self.steps = ()                         # Tuple index for enabled/disabled step to play sound
+
         self.current_sample_index = 0           # Remember sample index position
         self.current_step_index = 0
         self.last_sound_start_sample_index = 0
 
-        self.buffer = None
-        self.compute_step_nb_samples_and_alloc_buffer()
+        # Calculate buffer size using min bpm
+        self.buffer_nb_samples = self.compute_step_nb_samples(min_bpm)  # Save reference for Audio Mixer use
+        self.buffer = array('h', b"\x00\x00" * self.buffer_nb_samples)
 
     def set_steps(self, steps):
         # If the number of steps change the step index must be reset
-        print("AudioTrack:: "+str(steps))
-        print("AudioTrack:: Enter function")
         if not len(steps) == len(self.steps):
             self.current_step_index = 0
-            print("AudioTrack:: Steps reset")
         self.steps = steps
-        print("AudioTrack:: Steps set")
 
     def set_bpm(self, bpm):
         self.bpm = bpm
-        self.compute_step_nb_samples_and_alloc_buffer()  # bpm impacts the buffer size and must be reset at every change
+        self.step_nb_samples = self.compute_step_nb_samples(bpm)
 
-    # 4 steps per beat == 1/4 beat per step
-    # samples per step = ( sample rate (44100) * 60 sec ) / ( 4 steps * bpm )
-    def compute_step_nb_samples_and_alloc_buffer(self):
+    def compute_step_nb_samples(self, bpm_value):
         # protect against div/0
-        if not self.bpm == 0:
-            # Realloc buffer is costly and must only be done if step samples value is changed
-            step_samples = int(self.sample_rate * 15 / self.bpm)  # cannot be fractional value
-            if not step_samples == self.step_nb_samples:
-                self.step_nb_samples = step_samples     # Set to new value if different
-                self.buffer = array('h', b"\x00\x00" * self.step_nb_samples)
+        if not bpm_value == 0:
+            # 4 steps per beat == 1/4 beat per step  -> arbitrary choice of how to split beats and steps
+            # samples per step = ( sample rate (44100) * 60 sec ) / ( 4 steps * bpm )
+            step_samples = int(self.sample_rate * 15 / bpm_value)  # cannot be fractional value
+            return step_samples
+        return 0
 
     # Override the get_bytes method of ThreadSource  -- see get_bytes_array
     # This is called internally by audio library and makes the magic happen
@@ -91,4 +89,6 @@ class AudioSourceTrack(ThreadSource):
         if self.current_step_index >= len(self.steps):
             self.current_step_index = 0
 
-        return self.buffer
+        # Since the buffer size is fixed, only return the part of the buffer with valid samples
+        # --based on the number of samples per step (changes with bpm)
+        return self.buffer[0:self.step_nb_samples]
