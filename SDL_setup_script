@@ -26,7 +26,7 @@ sudo sed -in "s+use_sdl2 = environ.get('USE_SDL2')+environ.setdefault('USE_SDL2'
 # Compile audiostream
 sudo python3 setup.py install
 
-# Clean up 
+# Clean up audiostream
 cd ..
 sudo rm -r audiostream
 

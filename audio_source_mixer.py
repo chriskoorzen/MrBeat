@@ -1,10 +1,15 @@
 from array import array
 
 from audiostream.sources.thread import ThreadSource
-
-
 # This does the actual playing of sounds by passing a channel and a wav stream
 from audio_source_track import AudioSourceTrack
+
+# Bounding condition for track sums that flow over 16 bits
+MAX_16BITS = 32767
+MIN_16BITS = -32768
+def sum_16bits(n):
+    s = sum(n)
+    return min(max(s, MIN_16BITS), MAX_16BITS)
 
 
 class AudioSourceMixer(ThreadSource):
@@ -22,10 +27,11 @@ class AudioSourceMixer(ThreadSource):
 
         # Init buffer with same size as tracks
         buffer_nb_samples = self.tracks[0].buffer_nb_samples
-        self.buffer = array('h', b"\x00\x00" * buffer_nb_samples)     # AudioTrack buffers will be aggregated in here
+        self.silence = array('h', b"\x00\x00" * buffer_nb_samples)     # AudioTrack buffers will be aggregated in here
 
         self.min_bpm = min_bpm
         self.bpm = bpm
+
         self.sample_rate = sample_rate
         self.nb_steps = nb_steps
         self.current_sample_index = 0           # Remember sample index position
@@ -35,20 +41,7 @@ class AudioSourceMixer(ThreadSource):
         self.on_current_step_changed = on_current_step_changed
 
         self.is_playing = False
-        '''
-    def set_steps(self, index, steps):
-        # Index cannot be greater than number of tracks loaded
-        print("AudioMixer set steps called")
-        if index >= len(self.tracks):
-            print("mixer: did nothing (index >= steps)")
-            return
-        
-        # Make sure step length stay consistent
-        if len(steps) == self.nb_steps:
-            print(self.tracks[index])
-            self.tracks[index].set_steps(steps)
-            print("mixer: steps given to AudioSourceTrack")
-        '''
+
     def set_bpm(self, bpm):
         # Protect against bad bpm value
         if bpm < self.min_bpm:
@@ -77,9 +70,7 @@ class AudioSourceMixer(ThreadSource):
 
         # Return silence and end get_bytes call when is_playing is set to False
         if not self.is_playing:
-            for sample in range(step_nb_samples):
-                self.buffer[sample] = 0
-            return self.buffer.tobytes()
+            return self.silence[:].tobytes()
 
         # Loop over tracks and get every track buffer for every call of
         # get_bytes by audio library. get_bytes of AudioSourceTrack is overridden to return the buffer itself.
@@ -89,11 +80,10 @@ class AudioSourceMixer(ThreadSource):
             track_buffer = track.get_bytes_array()
             track_buffers.append(track_buffer)
 
-        # For every index, loop over track buffers and aggregate samples into single output value
-        for sample in range(step_nb_samples):
-            self.buffer[sample] = 0         # Reset each time this function is called, or we'll get an aggregate problem
-            for track in range(len(self.tracks)):
-                self.buffer[sample] += track_buffers[track][sample]
+        # zip rearranges buffers by index
+        # map applies sum_16bits to index array, and creates a new array with the total values
+        s = map(sum_16bits, zip(*track_buffers))
+        result_buf = array("h", s)
 
         # VISUAL INDICATOR
         # transmit current_step_index to play indicator before it increments to the next step
@@ -102,7 +92,7 @@ class AudioSourceMixer(ThreadSource):
             step_index_with_offset = self.current_step_index - 4    # Hardcoded offset to compensate for time delay
             if step_index_with_offset < 0:
                 step_index_with_offset += self.nb_steps             # If a negative value, add total steps to correct
-            self.on_current_step_changed(self.current_step_index)   # This function expects the step_index parameter
+            self.on_current_step_changed(step_index_with_offset)   # This function expects the step_index parameter
 
         self.current_step_index += 1
         # Reset step index position once looped through
@@ -111,4 +101,4 @@ class AudioSourceMixer(ThreadSource):
 
         # Since the buffer size is fixed, only return the part of the buffer with valid samples
         # --based on the number of samples per step (changes with bpm)
-        return self.buffer[0:step_nb_samples].tobytes()  # Note - some implementations use tostring()
+        return result_buf.tobytes()  # Note - some implementations use tostring()

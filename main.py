@@ -32,6 +32,7 @@ class MainWidget(RelativeLayout):
         all_wav_samples = self.sound_kit_service.get_all_samples()
         self.audio_mixer = self.audio_engine.create_mixer(all_wav_samples, 100, TRACKS_NB_STEPS, self.on_mixer_current_step_changed, MIN_BPM)
 
+    # on_parent calls when the MainWidget is hooked to the prepared window
     def on_parent(self, widget, parent):
         # Build the Play Indicator display
         self.play_indicator_widget.set_nb_steps(TRACKS_NB_STEPS)
@@ -62,6 +63,8 @@ class MainWidget(RelativeLayout):
     def audio_stop(self):
         self.audio_mixer.audio_stop()
 
+    # Kivy auto-calls "on_* ", where * == name of {type}Property that is defined,
+    # and when used inside kv (see kv file root.bpm)
     def on_bpm(self, widget, value):
         # Limit bpm values to between MIN_BPM and MAX_BPM
         if value < MIN_BPM:
