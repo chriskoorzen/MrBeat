@@ -1,11 +1,10 @@
-from kivy.metrics import dp
 from kivy.properties import NumericProperty
 from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.button import Button
-from kivy.uix.togglebutton import ToggleButton
+from kivy.uix.image import Image
+from kivy.uix.widget import Widget
 
 
-class PlayIndicatorButton(ToggleButton):
+class PlayIndicatorLight(Image):
     pass
 
 
@@ -17,43 +16,39 @@ class PlayIndicator(BoxLayout):
     # Manage layout offset
     nb_steps = 0
     left_align = NumericProperty(0)
-    indicator_buttons = []
+    indicator_lights = []
 
-    # Create indicator buttons
+    # Create indicator lights
     def set_nb_steps(self, nb_steps):
         if nb_steps != self.nb_steps:
             self.nb_steps = nb_steps    # Update value
             self.clear_widgets()        # Remove previous widgets on update
 
             # Style of left-aligned spacer -> First element and same size as sound button appearing underneath
-            left_align_button = Button()
-            left_align_button.size_hint_x = None
-            left_align_button.width = self.left_align
-            left_align_button.disabled = True
-            left_align_button.background_disabled_normal = ''   # This is a texture by default
-            left_align_button.background_color = (0, 0, 0, 0)   # RGBA value -> this property alone handles color
-            self.add_widget(left_align_button)
+            left_align_spacer = Widget()
+            left_align_spacer.size_hint_x = None
+            left_align_spacer.width = self.left_align
+            self.add_widget(left_align_spacer)
+            
             # Add actual step indicators
-            self.indicator_buttons = []                              # Reset with each call
+            self.indicator_lights = []                              # Reset with each call
             for i in range(nb_steps):
-                button = PlayIndicatorButton()
-                button.disabled = True
-                button.background_color = (0, 1.0, 1.0, 1.0)
-                button.background_disabled_down = ''
-                # if i == 0:
-                #     button.state = 'down'
-                self.indicator_buttons.append(button)
-                self.add_widget(button)
+                light = PlayIndicatorLight()
+                light.source = "images/indicator_light_off.png"     # Default
+                self.indicator_lights.append(light)
+                self.add_widget(light)
 
     # Control which element lights up -> must be in sync with current step the audio mixer is playing
     def set_current_step_index(self, index):
-        # Integer "index" cannot be greater than number of indicator buttons
-        if index >= len(self.indicator_buttons):
+        # Integer "index" cannot be greater than number of indicator lights
+        if index >= len(self.indicator_lights):
             return
 
-        for i in range(len(self.indicator_buttons)):
-            button = self.indicator_buttons[i]
+        for i in range(len(self.indicator_lights)):
+            light = self.indicator_lights[i]
             if i == index:
-                button.state = 'down'
+                # Activated
+                light.source = "images/indicator_light_on.png"
             else:
-                button.state = 'normal'
+                # Normal
+                light.source = "images/indicator_light_off.png"

@@ -1,5 +1,11 @@
-import kivy
-import audiostream
+from kivy import Config
+from kivy.uix.widget import Widget
+
+Config.set('graphics', 'width', '1200')
+Config.set('graphics', 'height', '680')
+Config.set('graphics', 'minimum_width', '1000')
+Config.set('graphics', 'minimum_height', '380')
+
 from kivy.app import App
 from kivy.metrics import dp
 from kivy.properties import ObjectProperty, NumericProperty, Clock
@@ -14,16 +20,21 @@ MIN_BPM = 80
 MAX_BPM = 160
 
 
+class VerticalSpacingWidget(Widget):
+    pass
+
+
 class MainWidget(RelativeLayout):
     control_layout = ObjectProperty()
     play_indicator_widget = ObjectProperty()    # Create reference to PlayIndicator class object defined in kv file
     tracks_layout = ObjectProperty()
     audio_mixer = ObjectProperty()
     bpm = NumericProperty(100)
+    nb_tracks = NumericProperty(0)
 
     indicator_step_index = 0                    # This value is received from Audio Mixer
 
-    TRACK_STEPS_LEFT_ALIGN = NumericProperty(dp(100))
+    TRACK_STEPS_LEFT_ALIGN = NumericProperty(dp(110))
 
     def __init__(self, **kwargs):
         super(MainWidget, self).__init__(**kwargs)
@@ -31,6 +42,7 @@ class MainWidget(RelativeLayout):
         self.audio_engine = AudioEngine()
         all_wav_samples = self.sound_kit_service.get_all_samples()
         self.audio_mixer = self.audio_engine.create_mixer(all_wav_samples, 100, TRACKS_NB_STEPS, self.on_mixer_current_step_changed, MIN_BPM)
+        self.nb_tracks = self.sound_kit_service.get_nb_tracks()
 
     # on_parent calls when the MainWidget is hooked to the prepared window
     def on_parent(self, widget, parent):
@@ -41,7 +53,9 @@ class MainWidget(RelativeLayout):
         for index in range(self.sound_kit_service.get_nb_tracks()):
             sound = self.sound_kit_service.get_sound(index)
             track_source = self.audio_mixer.tracks[index]
+            self.tracks_layout.add_widget(VerticalSpacingWidget())      # To prettify resizing windows
             self.tracks_layout.add_widget(TrackWidget(sound, self.audio_engine, TRACKS_NB_STEPS, track_source, self.TRACK_STEPS_LEFT_ALIGN))
+        self.tracks_layout.add_widget(VerticalSpacingWidget())          # To prettify resizing windows
 
     def on_mixer_current_step_changed(self, step_index):
         # This function gets passed to the Audio Mixer to call on its current step index, so that we may display it

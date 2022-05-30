@@ -1,6 +1,8 @@
 from kivy.lang import Builder
+from kivy.metrics import dp
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
+from kivy.uix.image import Image
 from kivy.uix.togglebutton import ToggleButton
 
 Builder.load_file("track.kv")
@@ -25,11 +27,32 @@ class TrackWidget(BoxLayout):
         self.track_nb_steps = track_nb_steps
         self.track_source = track_source    # Save reference to AudioSourceTrack class object
 
-        sound_button = TrackSoundButton(text=self.name, width=track_left_align)
-        self.add_widget(sound_button)
+        bounding_box = BoxLayout()
+        bounding_box.width = track_left_align
+        bounding_box.size_hint_x = None
+
+        sound_button = TrackSoundButton()
+        sound_button.text = self.name
+        sound_button.size_hint_x = None
         sound_button.on_press = self.on_soundbutton_press
+        bounding_box.add_widget(sound_button)
+
+        separator_image = Image(source="images/track_separator.png")
+        separator_image.size_hint_x = None
+        separator_image.width = dp(15)
+        bounding_box.add_widget(separator_image)
+
+        self.add_widget(bounding_box)
+
+        button_color1 = "images/step_normal2.png"
+        button_color2 = "images/step_normal1.png"
         for i in range(track_nb_steps):
-            step_button = TrackStepButton()
+            # Every 4th track, alternate button color
+            # It will swap on first run, i = 0
+            if i % 4.0 == 0:
+                # Swap variables around --- is there an elegant way to do this in Python?? Yes, yes there is.
+                button_color1, button_color2 = button_color2, button_color1
+            step_button = TrackStepButton(background_normal=button_color1)
             self.step_buttons.append(step_button)
             step_button.bind(state=self.on_step_button_state)  # Bind a function to trigger when state is changed
             self.add_widget(step_button)
@@ -42,10 +65,7 @@ class TrackWidget(BoxLayout):
                 steps.append(1)
             else:
                 steps.append(0)
-        # self.track_source.set_steps(steps)  # Pass the step settings to AudioSource # DEV
-        print("Track:: steps set")
-        print("Track:: " + str(steps))
-        self.track_source.set_steps(steps)
+        self.track_source.set_steps(steps)      # Pass the step settings to AudioSource
 
     def on_soundbutton_press(self):
         self.audio_engine.play_sound(self.sound.samples)

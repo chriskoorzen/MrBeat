@@ -4,41 +4,108 @@
 
 MainWidget:
 
+<VerticalSpacingWidget>:
+    size_hint_y: 0.01
+
 <MainWidget>:
-    control_layout: control_layout
+    # control_layout: control_layout
     play_indicator_widget: play_indicator_widget
     tracks_layout: tracks_layout
+    control_layout: control_layout
     BoxLayout:
         orientation: 'vertical'
-        BoxLayout:
+
+        # top layout rework
+        RelativeLayout:
             id: control_layout
+            height: dp(60)
             size_hint_y: None
-            height: dp(80)
-            ControlButton:
-                text: "PLAY"
-                on_press: root.audio_play()
-            ControlButton:
-                text: "STOP"
-                on_press: root.audio_stop()
-            ControlButton:
-                text: "+"
+            Image:
+                source: "images/top_background.png"
+                allow_stretch: True
+                keep_ratio: False
+            Image:
+                source: "images/logo.png"
+                width: dp(230)
                 size_hint_x: None
-                width: dp(50)
-                on_press: root.bpm += 5
-            Label:
+                allow_stretch: True
+            BoxLayout:
                 size_hint_x: None
-                width: dp(80)
-                text: str(root.bpm)
-            ControlButton:
-                text: "-"
+                pos_hint: {"center_x": 0.5}
+                width: dp(200)
+                ControlButton:
+                    # text: "PLAY"
+                    on_press: root.audio_play()
+                    background_normal: "images/play_button_normal.png"
+                    background_down: "images/play_button_down.png"
+                ControlButton:
+                    # text: "STOP"
+                    on_press: root.audio_stop()
+                    background_normal: "images/stop_button_normal.png"
+                    background_down: "images/stop_button_down.png"
+            # BPM Bar
+            BoxLayout:
+                width: dp(180)
                 size_hint_x: None
-                width: dp(50)
-                on_press: root.bpm -= 5
-        PlayIndicator:
-            id: play_indicator_widget
-            size_hint_y: None
-            height: dp(18)
-            left_align: root.TRACK_STEPS_LEFT_ALIGN
-        BoxLayout:
-            id: tracks_layout
-            orientation: "vertical"
+                pos_hint: {"right": 1}
+                ControlButton:
+                    # text: "+"
+                    size_hint_x: None
+                    width: dp(40)
+                    on_press: root.bpm += 5
+                    background_normal: "images/plus_button_normal.png"
+                    background_down: "images/plus_button_down.png"
+                RelativeLayout:
+                    Image:
+                        source: "images/bpm_lcd_background.png"
+                        allow_stretch: True
+                        keep_ratio: False
+                    Label:
+                        pos: -dp(4), dp(2)
+                        text: "888"
+                        font_name: "fonts/Lcd.ttf"
+                        font_size: dp(36)
+                        opacity: 0.1
+                        color: 0, 1, 1, 1
+                    Label:
+                        pos: -dp(4), dp(2)
+                        text: '{:0>3}'.format(str(root.bpm))
+                        font_name: "fonts/Lcd.ttf"
+                        font_size: dp(36)
+                        color: 0, 1, 1, 1
+                ControlButton:
+                    # text: "-"
+                    size_hint_x: None
+                    width: dp(40)
+                    # height: dp(25)
+                    on_press: root.bpm -= 5
+                    background_normal: "images/minus_button_normal.png"
+                    background_down: "images/minus_button_down.png"
+                Widget:
+                    size_hint_x: None
+                    width: dp(20)
+
+        # Indicator and Tracks -- Bottom
+        RelativeLayout:
+            Image:
+                source: "images/background.jpg"
+                allow_stretch: True
+                keep_ratio: False
+            BoxLayout:
+                orientation: 'vertical'
+                x: dp(16)       # These are offsets
+                y: dp(16)       # ''
+                size_hint: None, None
+                size: (self.parent.width - dp(32), self.parent.height - dp(32))
+                PlayIndicator:
+                    id: play_indicator_widget
+                    size_hint_y: None
+                    height: dp(18)
+                    left_align: root.TRACK_STEPS_LEFT_ALIGN
+                ScrollView:
+                    do_scroll_x: False
+                    do_scroll_y: True
+                    BoxLayout:
+                        id: tracks_layout
+                        size_hint_min_y: dp(75)*root.nb_tracks      # Setting a min value is required for scroll feature to "activate"
+                        orientation: "vertical"

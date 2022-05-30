@@ -1,8 +1,16 @@
 
 <TrackStepButton>:
+    background_normal: "images/step_normal1.png"    # Default values -- overridden .py file
+    background_down: "images/step_down.png"
 
 <TrackSoundButton>:
     size_hint_x: None
+    background_normal: "images/sound_button_normal.png"
+    background_down: "images/sound_button_down.png"
+    bold: True
+    font_size: dp(15)
 
 <TrackWidget>:
+    size_hint_max_y: dp(75)     # Controls widget size on window resizing
+    size_hint_min_y: dp(50)
 
